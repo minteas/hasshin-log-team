@@ -55,19 +55,7 @@ function Ic({ n, size = 20, color = "currentColor", sw = 2 }) {
 
 /* ───────── 既定（チーム新規時のひな形） ───────── */
 const DEFAULT_CAUSE = { blocks: [{ id: "c1", text: "" }, { id: "c2", text: "" }, { id: "c3", text: "" }, { id: "c4", text: "" }] };
-const DEFAULT_GROUPS = [
-  { id: "g_post", name: "SNS発信", items: [
-    { id: "story", name: "ストーリー", color: "#FF6B4A", target: 0, why: "" },
-    { id: "reel", name: "リール", color: "#FF8763", target: 0, why: "" },
-    { id: "youtube", name: "YouTubeショート", color: "#FFA083", target: 0, why: "" },
-    { id: "threads", name: "スレッズ", color: "#E85A3C", target: 0, why: "" },
-    { id: "blog", name: "ブログ", color: "#C9462C", target: 0, why: "" },
-  ] },
-  { id: "g_act", name: "フォロー・営業活動", items: [
-    { id: "follow", name: "インスタフォロー", color: "#2BC5B4", target: 50, why: "" },
-    { id: "konkatsu", name: "婚活ライン", color: "#F5A623", target: 10, why: "" },
-  ] },
-];
+const DEFAULT_GROUPS = [];
 const CAUSE_LABELS = ["私は何を求めているのか？", "そのために「今」何をしているのか？", "その行動は私の求めているものを手に入れるのに効果的か？", "もっといい方法はないか？"];
 const CAUSE_PLACEHOLDERS = ["例：チームで成し遂げたい状態", "例：今チームでやっていること", "例：今のやり方は目的に効いているか？", "例：もっと良い打ち手は？"];
 
@@ -505,32 +493,7 @@ function SettingsSheet({ cause, groups, saveConfig, member, onChangeName, onClos
   const [g, setG] = useState(JSON.parse(JSON.stringify(groups)));
   const [palFor, setPalFor] = useState(null);
   const [whyFor, setWhyFor] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importDone, setImportDone] = useState(null);
   const commit = (nc, ng) => { setC(nc); setG(ng); saveConfig(nc, ng); };
-
-  const importFromSolo = async () => {
-    if (!member) return;
-    setImporting(true);
-    setImportDone(null);
-    const keys = [];
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("log:")) keys.push(k); } } catch(e) {}
-    if (keys.length === 0) { setImporting(false); setImportDone(0); return; }
-    const c = getSb(); if (!c) { setImporting(false); return; }
-    let count = 0;
-    for (const k of keys) {
-      const date = k.replace("log:", "");
-      const raw = localStorage.getItem(k);
-      if (!raw) continue;
-      try {
-        const data = JSON.parse(raw);
-        await c.from("entries").upsert({ id: TEAM_ID + "|" + member + "|" + date, team: TEAM_ID, member, date, data: { metrics: data.metrics || {}, goals: data.goals || [] }, updated_at: new Date().toISOString() });
-        count++;
-      } catch(e) {}
-    }
-    setImporting(false);
-    setImportDone(count);
-  };
 
   const updBlock = (id, text) => setC({ ...c, blocks: c.blocks.map((b) => b.id === id ? { ...b, text } : b) });
   const addBlock = () => commit({ ...c, blocks: [...c.blocks, { id: uid(), text: "" }] }, g);
@@ -554,17 +517,9 @@ function SettingsSheet({ cause, groups, saveConfig, member, onChangeName, onClos
         <div style={{ padding: 16 }}>
           <div style={{ background: "#eef9f6", border: `1px solid ${TEAL}44`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: "#2a7d72", marginBottom: 16 }}>ここでの「成し遂げたいこと」「タスク」はチーム全員で共有されます。変更は全員の画面に反映されます。</div>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${SBORD}`, borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${SBORD}`, borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
             <div><div style={{ fontSize: 11.5, color: SSUB, fontWeight: 700 }}>あなたの名前</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>{member}</div></div>
             <button onClick={onChangeName} style={{ ...ghostBtn, padding: "8px 12px" }}>変更</button>
-          </div>
-
-          <div style={{ background: "#fffdf0", border: "1px solid #e8d98a", borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#7a6e30", marginBottom: 4 }}>個人版からデータを引き継ぐ</div>
-            <div style={{ fontSize: 12, color: "#8a857a", lineHeight: 1.6, marginBottom: 10 }}>「発信ログ（個人版）」に記録した過去データを <b>{member || "あなた"}</b> の記録としてチームに読み込みます。</div>
-            <button onClick={importFromSolo} disabled={importing || !member} style={{ width: "100%", padding: "11px", borderRadius: 12, border: "none", background: importDone != null ? TEAL : "#e8c940", color: importDone != null ? "#fff" : "#5a4e10", fontWeight: 700, fontSize: 13.5, cursor: (!member || importing) ? "default" : "pointer", fontFamily: FONT, opacity: (!member || importing) ? .6 : 1 }}>
-              {importing ? "インポート中…" : importDone != null ? `✓ ${importDone}件を引き継ぎました` : "個人版のデータを引き継ぐ"}
-            </button>
           </div>
 
           <div style={{ marginBottom: 12 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Ic n="flag" size={18} /><span style={{ fontSize: 18, fontWeight: 800 }}>成し遂げたいこと</span></div></div>
