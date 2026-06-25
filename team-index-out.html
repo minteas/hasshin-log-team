@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>発信ログ（チーム）</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;padding:0;background:#FAF8F2}
+  input,button,select,textarea{font-family:inherit} ::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+/* ═══════════════════════════════════════════════════════════
+   ▼▼▼ ここの3つを Supabase の値に書き換えてください ▼▼▼
+   1) SUPABASE_URL  … Supabase の Settings → API → Project URL
+   2) SUPABASE_ANON_KEY … 同 → Project API keys → anon public
+   3) TEAM_ID … チームの合言葉的なID。共有する全員で同じ文字列にする
+   ═══════════════════════════════════════════════════════════ */
+const SUPABASE_URL = "https://twhcsbmlenuciaxledud.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Z0kOErbAtZUy6exIZHxpqA_yhWPcHv_";
+const TEAM_ID = "minteas-01";
+/* ▲▲▲ 書き換えるのはここまで ▲▲▲ */
+
+const CONFIGURED = SUPABASE_URL.indexOf("xxxxxxxx") === -1 && SUPABASE_ANON_KEY.indexOf("ここに") === -1 && SUPABASE_ANON_KEY.length > 20;
+let sb = null;
+function getSb() { if (!sb && CONFIGURED && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); return sb; }
+
+const INK = "#15181F", PAPER = "#FAF8F2", CORAL = "#FF6B4A", TEAL = "#2BC5B4", AMBER = "#F5A623";
+const FONT = "'Zen Kaku Gothic New','Outfit',-apple-system,'Hiragino Kaku Gothic ProN',sans-serif";
+const NUMF = "'Outfit','Zen Kaku Gothic New',sans-serif";
+const PALETTE = ["#FF6B4A","#FF8763","#E85A3C","#C9462C","#F5A623","#E8B400","#2BC5B4","#1FA39B","#5B8DEF","#8A6DF0","#D96BA8","#7D8A96"];
+const SSUB = "#9a948a", SBORD = "#efe9dd", SINP = "#e4ddcf", SBG = "#fffdf9";
+let _id = 1000; const uid = () => "x" + (++_id) + Date.now().toString(36).slice(-3);
+
+function Ic({ n, size = 20, color = "currentColor", sw = 2 }) {
+  const P = { plus:"M12 5v14M5 12h14", minus:"M5 12h14", check:"M20 6 9 17l-5-5", x:"M18 6 6 18M6 6l12 12", cleft:"M15 18l-6-6 6-6", cright:"M9 18l6-6-6-6", up:"M12 19V5M5 12l7-7 7 7", down:"M12 5v14M5 12l7 7 7-7", cdown:"M6 9l6 6 6-6", pencil:"M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z", trend:"M3 17l6-6 4 4 8-8M15 7h6v6", download:"M12 3v12M7 10l5 5 5-5M5 21h14", flame:"M12 22a6 6 0 0 0 6-6c0-4-4-6-4-10-3 2-5 5-5 8-2-1-3-3-3-5-1 2-2 5-2 7a6 6 0 0 0 6 6Z", spark:"M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z", users:"M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M22 20v-2a4 4 0 0 0-3-3.8M16 3.2a4 4 0 0 1 0 7.6" };
+  if (n === "trash") return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>);
+  if (n === "calendar") return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>);
+  if (n === "list") return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 10M3 18l1.5 1.5L7 16M11 6h10M11 12h10M11 18h10"/></svg>);
+  if (n === "copyfull") return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>);
+  if (n === "settings") return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>);
+  if (n === "flag") return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4M4 4h13l-2 4 2 4H4"/></svg>);
+  return (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d={P[n] || ""} /></svg>);
+}
+
+/* ───────── 既定（チーム新規時のひな形） ───────── */
+const DEFAULT_CAUSE = { blocks: [{ id: "c1", text: "" }, { id: "c2", text: "" }, { id: "c3", text: "" }, { id: "c4", text: "" }] };
+const DEFAULT_GROUPS = [
+  { id: "g_post", name: "SNS発信", items: [
+    { id: "story", name: "ストーリー", color: "#FF6B4A", target: 0, why: "" },
+    { id: "reel", name: "リール", color: "#FF8763", target: 0, why: "" },
+    { id: "youtube", name: "YouTubeショート", color: "#FFA083", target: 0, why: "" },
+    { id: "threads", name: "スレッズ", color: "#E85A3C", target: 0, why: "" },
+    { id: "blog", name: "ブログ", color: "#C9462C", target: 0, why: "" },
+  ] },
+  { id: "g_act", name: "フォロー・営業活動", items: [
+    { id: "follow", name: "インスタフォロー", color: "#2BC5B4", target: 50, why: "" },
+    { id: "konkatsu", name: "婚活ライン", color: "#F5A623", target: 10, why: "" },
+  ] },
+];
+const CAUSE_LABELS = ["私は何を求めているのか？", "そのために「今」何をしているのか？", "その行動は私の求めているものを手に入れるのに効果的か？", "もっといい方法はないか？"];
+const CAUSE_PLACEHOLDERS = ["例：チームで成し遂げたい状態", "例：今チームでやっていること", "例：今のやり方は目的に効いているか？", "例：もっと良い打ち手は？"];
+
+const pad = (n) => String(n).padStart(2, "0");
+const toKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayKey = () => toKey(new Date());
+const parseKey = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const WD = ["日","月","火","水","木","金","土"];
+const fmtJP = (k) => { const d = parseKey(k); return `${d.getMonth() + 1}/${d.getDate()}（${WD[d.getDay()]}）`; };
+const groupTotal = (metrics, group) => (group ? group.items.reduce((s, it) => s + ((metrics && metrics[it.id]) || 0), 0) : 0);
+const allTasks = (groups) => groups.flatMap((g) => g.items);
+const rkey = (member, date) => member + "│" + date;
+
+/* ═══════════ アプリ ═══════════ */
+function App() {
+  const [member, setMember] = useState(() => { try { return localStorage.getItem("tl_member") || ""; } catch (e) { return ""; } });
+  const [cause, setCause] = useState(DEFAULT_CAUSE);
+  const [groups, setGroups] = useState(DEFAULT_GROUPS);
+  const [rows, setRows] = useState({}); // rkey -> {member,date,metrics,goals}
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [tab, setTab] = useState("today");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showName, setShowName] = useState(false);
+  const [selDate, setSelDate] = useState(todayKey());
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+
+  // 初期ロード
+  useEffect(() => {
+    if (!CONFIGURED) { setLoading(false); return; }
+    const c = getSb();
+    if (!c) { setErr("Supabaseの読み込みに失敗しました。ネットワークをご確認ください。"); setLoading(false); return; }
+    (async () => {
+      try {
+        // 設定（チーム共通）
+        const cfg = await c.from("team_config").select("config").eq("id", TEAM_ID).maybeSingle();
+        if (cfg.error) throw cfg.error;
+        if (cfg.data && cfg.data.config) { setCause(cfg.data.config.cause || DEFAULT_CAUSE); setGroups(cfg.data.config.groups || DEFAULT_GROUPS); }
+        else { await c.from("team_config").upsert({ id: TEAM_ID, config: { cause: DEFAULT_CAUSE, groups: DEFAULT_GROUPS }, updated_at: new Date().toISOString() }); }
+        // 記録（チーム全員）
+        const ent = await c.from("entries").select("member,date,data").eq("team", TEAM_ID);
+        if (ent.error) throw ent.error;
+        const map = {};
+        (ent.data || []).forEach((r) => { map[rkey(r.member, r.date)] = { member: r.member, date: r.date, metrics: (r.data && r.data.metrics) || {}, goals: (r.data && r.data.goals) || [] }; });
+        setRows(map);
+      } catch (e) { setErr("読み込みエラー：" + (e.message || e) + "（SQLの実行漏れ・キーの誤りがないかご確認ください）"); }
+      finally { setLoading(false); }
+    })();
+
+    // リアルタイム購読
+    const ch = c.channel("rt-" + TEAM_ID)
+      .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: "team=eq." + TEAM_ID }, (p) => {
+        const r = p.new && p.new.member ? p.new : p.old;
+        if (!r) return;
+        setRows((prev) => {
+          const n = { ...prev };
+          if (p.eventType === "DELETE") delete n[rkey(r.member, r.date)];
+          else n[rkey(r.member, r.date)] = { member: r.member, date: r.date, metrics: (r.data && r.data.metrics) || {}, goals: (r.data && r.data.goals) || [] };
+          return n;
+        });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_config", filter: "id=eq." + TEAM_ID }, (p) => {
+        if (p.new && p.new.config) { setCause(p.new.config.cause || DEFAULT_CAUSE); setGroups(p.new.config.groups || DEFAULT_GROUPS); }
+      })
+      .subscribe();
+    return () => { try { c.removeChannel(ch); } catch (e) {} };
+  }, []);
+
+  useEffect(() => { if (!loading && CONFIGURED && !member) setShowName(true); }, [loading, member]);
+
+  const saveMyEntry = useCallback(async (date, entry) => {
+    setRows((p) => ({ ...p, [rkey(member, date)]: { member, date, metrics: entry.metrics, goals: entry.goals } }));
+    const c = getSb(); if (!c) return;
+    try { await c.from("entries").upsert({ id: TEAM_ID + "|" + member + "|" + date, team: TEAM_ID, member, date, data: { metrics: entry.metrics, goals: entry.goals }, updated_at: new Date().toISOString() }); } catch (e) {}
+  }, [member]);
+
+  const saveConfig = useCallback(async (nextCause, nextGroups) => {
+    setCause(nextCause); setGroups(nextGroups);
+    const c = getSb(); if (!c) return;
+    try { await c.from("team_config").upsert({ id: TEAM_ID, config: { cause: nextCause, groups: nextGroups }, updated_at: new Date().toISOString() }); } catch (e) {}
+  }, []);
+
+  const chooseName = (name) => { const n = name.trim(); if (!n) return; setMember(n); try { localStorage.setItem("tl_member", n); } catch (e) {} setShowName(false); };
+  const openDay = (key) => { setSelDate(key); setTab("today"); setShowSettings(false); };
+
+  if (!CONFIGURED) return <SetupNeeded />;
+  if (loading) return (<div style={{ fontFamily: FONT, background: PAPER, minHeight: "100vh", display: "grid", placeItems: "center", color: INK }}><div style={{ opacity: .6 }}>読み込み中…</div></div>);
+
+  const members = Array.from(new Set(Object.values(rows).map((r) => r.member))).sort();
+  const myEntry = rows[rkey(member, selDate)];
+
+  return (
+    <div style={{ fontFamily: FONT, background: PAPER, minHeight: "100vh", color: INK, paddingBottom: 86 }}>
+      <Header member={member} rows={rows} onSettings={() => setShowSettings(true)} onName={() => setShowName(true)} />
+      {err && <div style={{ maxWidth: 620, margin: "0 auto", padding: "10px 14px 0" }}><div style={{ background: "#fff4ef", border: `1px solid ${CORAL}55`, borderRadius: 12, padding: 12, fontSize: 12.5, color: "#b8472f" }}>{err}</div></div>}
+      <main style={{ maxWidth: 620, margin: "0 auto", padding: "16px 14px 0" }}>
+        {tab === "today" && <TodayTab key={selDate} cause={cause} groups={groups} member={member} selDate={selDate} setSelDate={setSelDate} entry={myEntry} saveMyEntry={saveMyEntry} onEditCause={() => setShowSettings(true)} />}
+        {tab === "team" && <TeamTab groups={groups} rows={rows} members={members} />}
+        {tab === "trend" && <TrendTab groups={groups} member={member} rows={rows} calMonth={calMonth} setCalMonth={setCalMonth} openDay={openDay} />}
+        {tab === "history" && <HistoryTab groups={groups} member={member} rows={rows} openDay={openDay} />}
+      </main>
+      <TabBar tab={tab} setTab={(t) => { setTab(t); setShowSettings(false); }} />
+      {showSettings && <SettingsSheet cause={cause} groups={groups} saveConfig={saveConfig} member={member} onChangeName={() => { setShowSettings(false); setShowName(true); }} onClose={() => setShowSettings(false)} />}
+      {showName && <NameGate members={members} current={member} onPick={chooseName} canClose={!!member} onClose={() => setShowName(false)} />}
+    </div>
+  );
+}
+
+function SetupNeeded() {
+  return (
+    <div style={{ fontFamily: FONT, background: PAPER, minHeight: "100vh", color: INK, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ maxWidth: 460, background: "#fff", border: `1px solid ${SBORD}`, borderRadius: 18, padding: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><Ic n="users" size={20} color={CORAL} /><span style={{ fontSize: 18, fontWeight: 800 }}>チーム共有の初期設定</span></div>
+        <div style={{ fontSize: 14, lineHeight: 1.8, color: "#5b574d" }}>
+          このアプリを動かすには、ファイル先頭の <b>SUPABASE_URL</b> / <b>SUPABASE_ANON_KEY</b> / <b>TEAM_ID</b> を、あなたのSupabaseの値に書き換えてください。<br /><br />
+          Supabaseで <b>SQL</b> を実行してテーブルを作成し、<b>Settings → API</b> から URL と anon キーをコピーして貼り替えます。<br /><br />
+          設定が済むと、チーム全員の数字がリアルタイムで集まります。
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NameGate({ members, current, onPick, canClose, onClose }) {
+  const [name, setName] = useState(current || "");
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "grid", placeItems: "center", background: "#0000006b", padding: 22 }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: 22, width: "100%", maxWidth: 380 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>あなたの名前</div>
+        <div style={{ fontSize: 12.5, color: SSUB, marginBottom: 14 }}>チームの中であなたの記録を識別する名前です。</div>
+        {members.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, color: SSUB, marginBottom: 6 }}>参加中のメンバー</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {members.map((m) => <button key={m} onClick={() => onPick(m)} style={{ border: `1px solid ${SINP}`, background: m === current ? CORAL + "1a" : "#fff", color: m === current ? CORAL : INK, borderRadius: 999, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>{m}</button>)}
+            </div>
+          </div>
+        )}
+        <input value={name} placeholder="名前を入力（例：たろう）" onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") onPick(name); }} style={{ width: "100%", border: `1px solid ${SINP}`, borderRadius: 11, padding: "12px", fontSize: 15, outline: "none", fontFamily: FONT, marginBottom: 12 }} />
+        <button onClick={() => onPick(name)} disabled={!name.trim()} style={{ ...primaryBtn, width: "100%", opacity: name.trim() ? 1 : .5 }}>この名前で参加</button>
+        {canClose && <button onClick={onClose} style={{ width: "100%", marginTop: 8, border: "none", background: "transparent", color: SSUB, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}>閉じる</button>}
+      </div>
+    </div>
+  );
+}
+
+function Header({ member, rows, onSettings, onName }) {
+  const streak = useMemo(() => {
+    let s = 0; let d = new Date();
+    for (;;) { const e = rows[rkey(member, toKey(d))]; const has = e && Object.values(e.metrics || {}).some((v) => v > 0); if (!has) { if (toKey(d) === todayKey()) { d = addDays(d, -1); continue; } break; } s++; d = addDays(d, -1); }
+    return s;
+  }, [rows, member]);
+  return (
+    <header style={{ background: INK, color: "#fff", padding: "16px 16px 14px" }}>
+      <div style={{ maxWidth: 620, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontFamily: NUMF, fontWeight: 800, fontSize: 21, letterSpacing: .5 }}>発信ログ <span style={{ fontSize: 12, opacity: .5, fontWeight: 700 }}>TEAM</span></div>
+          <button onClick={onName} style={{ marginTop: 3, display: "inline-flex", alignItems: "center", gap: 5, background: "#ffffff14", border: "none", color: "#fff", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: FONT }}><Ic n="users" size={12} />{member || "名前未設定"}</button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,107,74,.14)", border: `1px solid ${CORAL}55`, color: CORAL, padding: "8px 12px", borderRadius: 999 }}><Ic n="flame" size={16} /><span style={{ fontFamily: NUMF, fontWeight: 700, fontSize: 18 }}>{streak}</span><span style={{ fontSize: 11, opacity: .9 }}>日連続</span></div>
+          <button onClick={onSettings} style={{ width: 38, height: 38, borderRadius: 11, border: "1px solid #ffffff22", background: "#ffffff10", color: "#fff", display: "grid", placeItems: "center", cursor: "pointer" }}><Ic n="settings" size={18} /></button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function CauseCard({ cause, onEdit, startOpen }) {
+  const [open, setOpen] = useState(!!startOpen);
+  const blocks = cause.blocks.filter((b) => b.text.trim());
+  if (blocks.length === 0) return (<div onClick={onEdit} style={{ background: INK, color: "#fff", borderRadius: 16, padding: 16, marginBottom: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}><Ic n="flag" size={18} color={CORAL} /><span style={{ fontSize: 14, opacity: .8 }}>チームの「成し遂げたいこと」を設定する（タップ）</span></div>);
+  return (
+    <div style={{ background: INK, color: "#fff", borderRadius: 18, padding: "16px 16px 12px", marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}><Ic n="flag" size={16} color={CORAL} /><span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, opacity: .6 }}>成し遂げたいこと</span></div>
+        <button onClick={onEdit} style={{ ...iconGhost, width: 28, height: 28, color: "#ffffff99" }}><Ic n="pencil" size={14} /></button>
+      </div>
+      <div style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{blocks[0].text}</div>
+      {open && blocks.slice(1).map((b, i) => (<div key={b.id} style={{ display: "flex", gap: 10, marginTop: 12, paddingTop: 12, borderTop: "1px solid #ffffff14" }}><span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 999, background: "#ffffff14", color: "#ffffffcc", display: "grid", placeItems: "center", fontFamily: NUMF, fontSize: 11, fontWeight: 700, marginTop: 1 }}>{i + 2}</span><div style={{ fontSize: 13.5, lineHeight: 1.6, opacity: .82, whiteSpace: "pre-wrap" }}>{b.text}</div></div>))}
+      {blocks.length > 1 && (<button onClick={() => setOpen(!open)} style={{ marginTop: 12, width: "100%", padding: 7, borderRadius: 9, border: "1px solid #ffffff1f", background: "transparent", color: "#ffffffb0", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>{open ? "閉じる" : "全文を見る"}<span style={{ display: "inline-flex", transform: open ? "rotate(180deg)" : "none" }}><Ic n="cdown" size={14} /></span></button>)}
+    </div>
+  );
+}
+
+/* ───────── 今日（自分の入力） ───────── */
+function TodayTab({ cause, groups, member, selDate, setSelDate, entry, saveMyEntry, onEditCause }) {
+  const [metrics, setMetrics] = useState(() => ({ ...((entry && entry.metrics) || {}) }));
+  const [goals, setGoals] = useState(() => entry && entry.goals ? entry.goals.map((g) => ({ ...g })) : []);
+  const [flash, setFlash] = useState(false);
+  useEffect(() => { setMetrics({ ...((entry && entry.metrics) || {}) }); setGoals(entry && entry.goals ? entry.goals.map((g) => ({ ...g })) : []); }, [selDate, entry]);
+  const persist = (m, g) => { saveMyEntry(selDate, { metrics: m, goals: g.filter((x) => x.text.trim()) }); setFlash(true); setTimeout(() => setFlash(false), 1100); };
+  const bump = (id, dl) => setMetrics((p) => { const m = { ...p, [id]: Math.max(0, (p[id] || 0) + dl) }; persist(m, goals); return m; });
+  const setVal = (id, v) => { const n = Math.max(0, parseInt(v || "0", 10) || 0); setMetrics((p) => { const m = { ...p, [id]: n }; persist(m, goals); return m; }); };
+  const addGoal = () => setGoals([...goals, { text: "", result: "", done: false }]);
+  const upGoal = (i, patch) => { const g = goals.map((x, idx) => idx === i ? { ...x, ...patch } : x); setGoals(g); persist(metrics, g); };
+  const rmGoal = (i) => { const g = goals.filter((_, idx) => idx !== i); setGoals(g); persist(metrics, g); };
+  const shift = (dl) => setSelDate(toKey(addDays(parseKey(selDate), dl)));
+
+  return (
+    <div>
+      <CauseCard cause={cause} onEdit={onEditCause} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <IconBtn onClick={() => shift(-1)}><Ic n="cleft" /></IconBtn>
+        <div style={{ textAlign: "center" }}><div style={{ fontFamily: NUMF, fontWeight: 700, fontSize: 19 }}>{fmtJP(selDate)}</div>{selDate === todayKey() ? <div style={{ fontSize: 11, color: CORAL, fontWeight: 700 }}>今日</div> : <button onClick={() => setSelDate(todayKey())} style={{ ...linkBtn, marginTop: 2 }}>今日へ戻る</button>}</div>
+        <IconBtn onClick={() => shift(1)} disabled={selDate >= todayKey()}><Ic n="cright" /></IconBtn>
+      </div>
+      {groups.map((g) => g.items.length > 0 && (
+        <SectionCard key={g.id} title={g.name} right={<span style={{ fontFamily: NUMF, fontWeight: 800, fontSize: 18, color: CORAL }}>計 {groupTotal(metrics, g)}</span>}>
+          {g.items.map((it, i) => <TaskRow key={it.id} t={it} value={metrics[it.id] || 0} bump={bump} setVal={setVal} divider={i > 0} />)}
+        </SectionCard>
+      ))}
+      <SectionCard title="今日の目標・振り返り" icon={<Ic n="check" size={16} color={INK} />}>
+        {goals.length === 0 && <div style={{ fontSize: 13, color: "#8a8a82", padding: "4px 0 10px" }}>その日の目標を立てて、できたらチェック。</div>}
+        {goals.map((g, i) => (
+          <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0", borderTop: i ? "1px solid #eee7d8" : "none" }}>
+            <button onClick={() => upGoal(i, { done: !g.done })} style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 8, marginTop: 2, border: `1.5px solid ${g.done ? TEAL : "#cfcaba"}`, background: g.done ? TEAL : "#fff", display: "grid", placeItems: "center", cursor: "pointer", color: "#fff" }}>{g.done && <Ic n="check" size={16} sw={3} />}</button>
+            <div style={{ flex: 1 }}>
+              <input value={g.text} placeholder="目標" onChange={(e) => setGoals(goals.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x))} onBlur={() => persist(metrics, goals)} style={{ ...textInput, fontWeight: 600, textDecoration: g.done ? "line-through" : "none", color: g.done ? "#9a9a90" : INK }} />
+              <input value={g.result} placeholder="→ 結果・メモ" onChange={(e) => setGoals(goals.map((x, idx) => idx === i ? { ...x, result: e.target.value } : x))} onBlur={() => persist(metrics, goals)} style={{ ...textInput, fontSize: 13, color: "#6b6b62", marginTop: 4 }} />
+            </div>
+            <button onClick={() => rmGoal(i)} style={{ ...iconGhost, marginTop: 2 }}><Ic n="x" size={16} /></button>
+          </div>
+        ))}
+        <button onClick={addGoal} style={addBtn}><Ic n="plus" size={16} /> 目標を追加</button>
+      </SectionCard>
+      <div style={{ textAlign: "center", fontSize: 12, color: flash ? TEAL : "transparent", fontWeight: 700, transition: "color .2s", height: 20 }}><Ic n="check" size={13} /> 共有しました</div>
+    </div>
+  );
+}
+
+function TaskRow({ t, value, bump, setVal, divider }) {
+  const [open, setOpen] = useState(false);
+  const met = t.target > 0 && value >= t.target;
+  return (
+    <div style={{ padding: "9px 0", borderTop: divider ? "1px solid #f3eee2" : "none" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 3, background: t.color, flexShrink: 0 }} />
+          <span style={{ fontSize: 14.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</span>
+          {t.why && t.why.trim() && <button onClick={() => setOpen(!open)} style={{ display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0, border: "none", background: open ? CORAL + "1a" : "#f1ece0", color: open ? CORAL : "#9a948a", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><Ic n="spark" size={12} />なぜ?</button>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {t.target > 0 && <span style={{ fontFamily: NUMF, fontSize: 11.5, fontWeight: 700, color: met ? TEAL : "#b5b1a6" }}>{met ? "✓" : ""}{value}/{t.target}</span>}
+          <RoundBtn onClick={() => bump(t.id, -1)} disabled={value <= 0}><Ic n="minus" size={16} /></RoundBtn>
+          <input value={value} inputMode="numeric" onChange={(e) => setVal(t.id, e.target.value.replace(/[^0-9]/g, ""))} style={{ width: 42, textAlign: "center", fontFamily: NUMF, fontWeight: 700, fontSize: 18, border: "none", background: "transparent", color: value ? INK : "#c3c0b4", outline: "none" }} />
+          <RoundBtn onClick={() => bump(t.id, 1)} accent><Ic n="plus" size={16} /></RoundBtn>
+        </div>
+      </div>
+      {open && t.why && (<div style={{ marginTop: 8, marginLeft: 18, background: "#faf6ec", border: `1px solid ${t.color}33`, borderLeft: `3px solid ${t.color}`, borderRadius: 10, padding: "10px 12px" }}><div style={{ fontSize: 10.5, fontWeight: 800, color: t.color, letterSpacing: .5, marginBottom: 4 }}>成し遂げたいことへの繋がり</div><div style={{ fontSize: 13, color: "#5b574d", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{t.why}</div></div>)}
+    </div>
+  );
+}
+
+/* ───────── チーム（リアルタイム集計） ───────── */
+function TeamTab({ groups, rows, members }) {
+  const tk = todayKey();
+  const tasks = allTasks(groups);
+  const metricsOf = (mem, date) => (rows[rkey(mem, date)] && rows[rkey(mem, date)].metrics) || {};
+  // 今日のチーム合計（グループ別）
+  const teamGroupTotal = (g) => members.reduce((s, mem) => s + groupTotal(metricsOf(mem, tk), g), 0);
+  // 今週ランキング（先頭グループ合計）
+  const primary = groups[0];
+  const weekStart = toKey(addDays(new Date(), -6));
+  const weekScore = (mem) => { let v = 0; Object.values(rows).forEach((r) => { if (r.member === mem && r.date >= weekStart && r.date <= tk) v += groupTotal(r.metrics, primary); }); return v; };
+  const ranked = members.map((m) => ({ m, score: weekScore(m), todayActive: Object.values(metricsOf(m, tk)).some((v) => v > 0) })).sort((a, b) => b.score - a.score);
+  const maxScore = Math.max(1, ...ranked.map((r) => r.score));
+
+  if (members.length === 0) return (<div><TeamHead /><Empty text="まだ誰も記録していません。「今日」タブから記録すると、ここに全員ぶんが集まります。" /></div>);
+
+  return (
+    <div>
+      <TeamHead count={members.length} />
+      <Card>
+        <CardTitle icon={<Ic n="users" size={16} />}>今日のチーム合計</CardTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 6 }}>
+          {groups.map((g) => (<div key={g.id} style={{ background: "#faf6ec", borderRadius: 12, padding: "12px 14px" }}><div style={{ fontSize: 12, color: "#8a857a", fontWeight: 600 }}>{g.name}</div><div style={{ fontFamily: NUMF, fontWeight: 800, fontSize: 28, color: g.items[0] ? g.items[0].color : CORAL, marginTop: 2 }}>{teamGroupTotal(g)}</div></div>))}
+        </div>
+      </Card>
+      <Card>
+        <CardTitle icon={<Ic n="flame" size={16} />}>今週のランキング（{primary ? primary.name : ""}）</CardTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+          {ranked.map((r, i) => (
+            <div key={r.m} style={{ padding: "9px 0", borderTop: i ? "1px solid #f1ebdc" : "none" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <span style={{ fontFamily: NUMF, fontWeight: 800, fontSize: 14, color: i === 0 ? AMBER : "#b5b1a6", width: 18 }}>{i + 1}</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 600 }}>{r.m}</span>
+                  {r.todayActive && <span style={{ width: 7, height: 7, borderRadius: 9, background: TEAL }} title="今日記録あり" />}
+                </div>
+                <span style={{ fontFamily: NUMF, fontWeight: 800, fontSize: 18 }}>{r.score}</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 99, background: "#f1ece0", overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.round((r.score / maxScore) * 100)}%`, background: i === 0 ? AMBER : CORAL, borderRadius: 99 }} /></div>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card>
+        <CardTitle icon={<Ic n="users" size={16} />}>メンバー別・今日の記録</CardTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
+          {members.map((mem) => {
+            const mm = metricsOf(mem, tk);
+            const chips = tasks.filter((it) => (mm[it.id] || 0) > 0).map((it) => ({ label: it.name, val: mm[it.id], color: it.color }));
+            const doneTargets = tasks.filter((it) => it.target > 0 && (mm[it.id] || 0) >= it.target).length;
+            const allTargets = tasks.filter((it) => it.target > 0).length;
+            return (
+              <div key={mem} style={{ border: "1px solid #f0ebdd", borderRadius: 14, padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: chips.length ? 8 : 0 }}>
+                  <span style={{ fontWeight: 700, fontSize: 14.5 }}>{mem}</span>
+                  {allTargets > 0 && <span style={{ fontFamily: NUMF, fontSize: 12, fontWeight: 700, color: doneTargets === allTargets ? TEAL : "#a8a89e" }}>目標 {doneTargets}/{allTargets}</span>}
+                </div>
+                {chips.length > 0 ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{chips.map((c, i) => <span key={i} style={{ fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: c.color + "1a", color: c.color }}>{c.label} {c.val}</span>)}</div> : <span style={{ fontSize: 12.5, color: "#b3aea2" }}>今日はまだ記録なし</span>}
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
+function TeamHead({ count }) {
+  return (<div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: "#7a7a70" }}><span style={{ width: 8, height: 8, borderRadius: 9, background: TEAL, boxShadow: `0 0 0 4px ${TEAL}22` }} /><span style={{ fontSize: 12.5, fontWeight: 700 }}>リアルタイム更新中{count ? `・${count}人参加` : ""}</span></div>);
+}
+
+/* ───────── 推移（自分） ───────── */
+function TrendTab({ groups, member, rows, calMonth, setCalMonth, openDay }) {
+  const [range, setRange] = useState("week");
+  const { y, m } = calMonth;
+  const primary = groups[0];
+  const mine = {}; Object.values(rows).forEach((r) => { if (r.member === member) mine[r.date] = r; });
+  const inRange = (k, s, e) => k >= s && k <= e;
+  const today = new Date();
+  let cS, cE, pS, pE, rlabel;
+  if (range === "week") { cS = toKey(addDays(today, -6)); cE = toKey(today); pS = toKey(addDays(today, -13)); pE = toKey(addDays(today, -7)); rlabel = "直近7日"; }
+  else { cS = `${y}-${pad(m + 1)}-01`; cE = `${y}-${pad(m + 1)}-31`; const pm = m === 0 ? 11 : m - 1, py = m === 0 ? y - 1 : y; pS = `${py}-${pad(pm + 1)}-01`; pE = `${py}-${pad(pm + 1)}-31`; rlabel = `${m + 1}月`; }
+  const summ = groups.map((g) => { let v = 0, pv = 0; Object.entries(mine).forEach(([k, en]) => { if (inRange(k, cS, cE)) v += groupTotal(en.metrics, g); if (inRange(k, pS, pE)) pv += groupTotal(en.metrics, g); }); return { label: g.name, color: g.items[0] ? g.items[0].color : CORAL, cur: v, prev: pv }; });
+  const monthEntries = Object.entries(mine).filter(([k]) => { const d = parseKey(k); return d.getFullYear() === y && d.getMonth() === m; });
+  const barData = monthEntries.sort(([a], [b]) => a < b ? -1 : 1).map(([k, e]) => { const d = parseKey(k); return { day: d.getDate(), segs: (primary ? primary.items : []).map((it) => ({ id: it.id, color: it.color, val: e.metrics[it.id] || 0 })), total: groupTotal(e.metrics, primary) }; });
+  const barMax = Math.max(1, ...barData.map((b) => b.total));
+  const shiftMonth = (dl) => { let nm = m + dl, ny = y; if (nm < 0) { nm = 11; ny--; } if (nm > 11) { nm = 0; ny++; } setCalMonth({ y: ny, m: nm }); };
+
+  return (
+    <div>
+      <div style={{ fontSize: 12.5, color: "#7a7a70", fontWeight: 700, marginBottom: 12 }}>あなた（{member}）の推移</div>
+      <div style={{ display: "flex", gap: 6, background: "#f0ebdd", padding: 4, borderRadius: 12, marginBottom: 14 }}>
+        {[["week", "今週"], ["month", "今月"]].map(([v, l]) => <button key={v} onClick={() => setRange(v)} style={{ flex: 1, padding: "9px 0", borderRadius: 9, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, fontFamily: FONT, background: range === v ? "#fff" : "transparent", color: range === v ? INK : "#9a9a90", boxShadow: range === v ? "0 1px 3px #0000001a" : "none" }}>{l}</button>)}
+      </div>
+      <Card>
+        <CardTitle icon={<Ic n="trend" size={16} />}>{rlabel}のサマリー</CardTitle>
+        <div style={{ fontSize: 11.5, color: "#a0a096", marginBottom: 8 }}>{range === "week" ? "前の7日間との比較" : "先月との比較"}</div>
+        {summ.map((r, i) => { const diff = r.cur - r.prev; return (
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderTop: i ? "1px solid #f1ebdc" : "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9 }}><span style={{ width: 9, height: 9, borderRadius: 3, background: r.color }} /><span style={{ fontSize: 14, fontWeight: 600 }}>{r.label}</span></div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}><span style={{ fontFamily: NUMF, fontWeight: 800, fontSize: 22 }}>{r.cur}</span><span style={{ display: "inline-flex", alignItems: "center", gap: 2, fontSize: 12.5, fontWeight: 700, minWidth: 46, justifyContent: "flex-end", color: diff > 0 ? TEAL : diff < 0 ? "#d8674f" : "#b5b5ab" }}>{diff > 0 && <Ic n="up" size={13} />}{diff < 0 && <Ic n="down" size={13} />}{diff === 0 ? "±0" : Math.abs(diff)}</span></div>
+          </div>
+        ); })}
+      </Card>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "4px 0 12px" }}>
+        <IconBtn onClick={() => shiftMonth(-1)}><Ic n="cleft" /></IconBtn><div style={{ fontFamily: NUMF, fontWeight: 700, fontSize: 18 }}>{y}年 {m + 1}月</div><IconBtn onClick={() => shiftMonth(1)}><Ic n="cright" /></IconBtn>
+      </div>
+      <Card>
+        <CardTitle icon={<Ic n="calendar" size={16} />}>あなたの継続カレンダー</CardTitle>
+        <CalendarHeat y={y} m={m} mine={mine} groups={groups} openDay={openDay} />
+      </Card>
+      <Card>
+        <CardTitle icon={<Ic n="trend" size={16} />}>{primary ? primary.name : ""}の内訳（日別・{m + 1}月）</CardTitle>
+        {barData.length === 0 ? <Empty text="この月の記録はまだありません。" /> : <MiniStack data={barData} max={barMax} />}
+        {barData.length > 0 && primary && <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>{primary.items.map((it) => <Legend key={it.id} color={it.color} text={it.name} />)}</div>}
+      </Card>
+    </div>
+  );
+}
+
+function MiniStack({ data, max }) {
+  const H = 170;
+  return (<div style={{ display: "flex", alignItems: "flex-end", gap: data.length > 16 ? 3 : 6, height: H + 22, marginTop: 8, overflowX: "auto", paddingBottom: 2 }}>{data.map((b, i) => (<div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: data.length > 10 ? "0 0 auto" : 1, minWidth: 16 }}><div style={{ fontFamily: NUMF, fontSize: 10, fontWeight: 700, color: "#9a9a90", marginBottom: 3 }}>{b.total}</div><div style={{ width: "100%", maxWidth: 26, height: H, display: "flex", flexDirection: "column", justifyContent: "flex-end", borderRadius: 5, overflow: "hidden", background: "#f4efe3" }}>{b.segs.filter((s) => s.val > 0).map((s, j) => (<div key={j} style={{ height: `${(s.val / max) * H}px`, background: s.color }} />))}</div><div style={{ fontFamily: NUMF, fontSize: 10, color: "#a8a89e", marginTop: 4 }}>{b.day}</div></div>))}</div>);
+}
+
+function CalendarHeat({ y, m, mine, groups, openDay }) {
+  const primary = groups[0];
+  const targeted = allTasks(groups).filter((it) => it.target > 0);
+  const startPad = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const cells = []; for (let i = 0; i < startPad; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(d);
+  const maxPost = Math.max(1, ...Object.entries(mine).filter(([k]) => { const dt = parseKey(k); return dt.getFullYear() === y && dt.getMonth() === m; }).map(([, e]) => groupTotal(e.metrics, primary)));
+  const shade = (n) => n <= 0 ? "#f1ece0" : `rgba(255,107,74,${(0.25 + 0.75 * (n / maxPost)).toFixed(2)})`;
+  const allMet = (metrics) => targeted.length > 0 && targeted.every((it) => (metrics[it.id] || 0) >= it.target);
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5, marginBottom: 5 }}>{WD.map((w, i) => <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: i === 0 ? "#d8674f" : i === 6 ? "#5aa" : "#a8a89e" }}>{w}</div>)}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
+        {cells.map((d, i) => {
+          if (d === null) return <div key={i} />;
+          const key = `${y}-${pad(m + 1)}-${pad(d)}`; const e = mine[key]; const pt = e ? groupTotal(e.metrics, primary) : 0;
+          const hasAny = e && Object.values(e.metrics || {}).some((v) => v > 0); const met = e && allMet(e.metrics); const isToday = key === todayKey();
+          const border = isToday ? `2px solid ${INK}` : met ? `2px solid ${TEAL}` : "1px solid #00000008";
+          return (<button key={i} onClick={() => openDay(key)} style={{ aspectRatio: "1", borderRadius: 9, background: shade(pt), border, position: "relative", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 0, color: pt > maxPost * .5 ? "#fff" : "#6b6b62" }}><span style={{ fontFamily: NUMF, fontSize: 12, fontWeight: 700 }}>{d}</span>{pt > 0 && <span style={{ fontFamily: NUMF, fontSize: 10, fontWeight: 700, lineHeight: 1 }}>{pt}</span>}{hasAny && !met && <span style={{ position: "absolute", bottom: 3, width: 4, height: 4, borderRadius: 9, background: TEAL }} />}</button>);
+        })}
+      </div>
+    </div>
+  );
+}
+
+function HistoryTab({ groups, member, rows, openDay }) {
+  const items = allTasks(groups);
+  const mine = {}; Object.values(rows).forEach((r) => { if (r.member === member) mine[r.date] = r; });
+  const keys = Object.keys(mine).sort().reverse();
+  if (keys.length === 0) return <Empty text="まだ記録がありません。「今日」タブから始めましょう。" />;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ fontSize: 12.5, color: "#7a7a70", fontWeight: 700 }}>あなた（{member}）の履歴</div>
+      {keys.map((k) => {
+        const e = mine[k]; const chips = items.filter((it) => (e.metrics[it.id] || 0) > 0).map((it) => ({ label: it.name, val: e.metrics[it.id], color: it.color }));
+        return (
+          <Card key={k} pad={14}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: chips.length ? 10 : 0 }}>
+              <span style={{ fontFamily: NUMF, fontWeight: 700, fontSize: 16 }}>{fmtJP(k)}</span>
+              <button onClick={() => openDay(k)} style={iconGhost}><Ic n="pencil" size={15} /></button>
+            </div>
+            {chips.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{chips.map((c, i) => <span key={i} style={{ fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 999, background: c.color + "1a", color: c.color }}>{c.label} {c.val}</span>)}</div>}
+            {e.goals && e.goals.length > 0 && (<div style={{ marginTop: 12, borderTop: "1px solid #f0eadc", paddingTop: 10, display: "flex", flexDirection: "column", gap: 7 }}>{e.goals.map((g, i) => (<div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13 }}><span style={{ flexShrink: 0, marginTop: 1, width: 16, height: 16, borderRadius: 5, background: g.done ? TEAL : "#e6e1d4", display: "grid", placeItems: "center", color: "#fff" }}>{g.done && <Ic n="check" size={11} sw={3.5} />}</span><div><span style={{ fontWeight: 600, textDecoration: g.done ? "line-through" : "none", color: g.done ? "#9a9a90" : INK }}>{g.text}</span>{g.result && <span style={{ color: "#7a7a70" }}> → {g.result}</span>}</div></div>))}</div>)}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ───────── 設定（チーム共通） ───────── */
+function Swatches({ current, onPick }) { return (<div style={{ position: "absolute", top: 26, left: 0, zIndex: 9, display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 6, padding: 8, background: "#fff", border: `1px solid ${SBORD}`, borderRadius: 10, boxShadow: "0 6px 20px rgba(0,0,0,.12)" }}>{PALETTE.map((p) => <span key={p} onClick={() => onPick(p)} style={{ width: 20, height: 20, borderRadius: 5, background: p, cursor: "pointer", border: current === p ? "2px solid #2b2b2b" : "2px solid transparent" }} />)}</div>); }
+
+function SettingsSheet({ cause, groups, saveConfig, member, onChangeName, onClose }) {
+  const [c, setC] = useState(JSON.parse(JSON.stringify(cause)));
+  const [g, setG] = useState(JSON.parse(JSON.stringify(groups)));
+  const [palFor, setPalFor] = useState(null);
+  const [whyFor, setWhyFor] = useState(null);
+  const commit = (nc, ng) => { setC(nc); setG(ng); saveConfig(nc, ng); };
+
+  const updBlock = (id, text) => setC({ ...c, blocks: c.blocks.map((b) => b.id === id ? { ...b, text } : b) });
+  const addBlock = () => commit({ ...c, blocks: [...c.blocks, { id: uid(), text: "" }] }, g);
+  const delBlock = (id) => commit({ ...c, blocks: c.blocks.filter((b) => b.id !== id) }, g);
+  const updItem = (gid, iid, key, val) => { const ng = g.map((grp) => grp.id !== gid ? grp : { ...grp, items: grp.items.map((it) => it.id === iid ? { ...it, [key]: val } : it) }); (key === "name" || key === "why") ? setG(ng) : commit(c, ng); };
+  const addItem = (gid) => commit(c, g.map((grp) => grp.id !== gid ? grp : { ...grp, items: [...grp.items, { id: uid(), name: "", color: PALETTE[grp.items.length % PALETTE.length], target: 0, why: "" }] }));
+  const delItem = (gid, iid) => commit(c, g.map((grp) => grp.id !== gid ? grp : { ...grp, items: grp.items.filter((it) => it.id !== iid) }));
+  const updGroup = (gid, val) => setG(g.map((grp) => grp.id === gid ? { ...grp, name: val } : grp));
+  const addGroup = () => commit(c, [...g, { id: uid(), name: "", items: [] }]);
+  const delGroup = (gid) => { if (confirm("カテゴリを削除しますか？")) commit(c, g.filter((grp) => grp.id !== gid)); };
+  const ta = { width: "100%", border: `1px solid ${SINP}`, borderRadius: 10, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: FONT, lineHeight: 1.6, resize: "vertical", background: "#fff", color: INK };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "#00000055" }} />
+      <div style={{ position: "relative", background: PAPER, borderRadius: "22px 22px 0 0", maxWidth: 620, width: "100%", margin: "0 auto", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 -8px 40px #0000002e" }}>
+        <div style={{ position: "sticky", top: 0, background: PAPER, padding: "16px 16px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${SBORD}`, zIndex: 5 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, fontFamily: NUMF }}>設定（チーム共通）</div>
+          <button onClick={onClose} style={{ ...iconGhost, width: 34, height: 34 }}><Ic n="x" size={20} /></button>
+        </div>
+        <div style={{ padding: 16 }}>
+          <div style={{ background: "#eef9f6", border: `1px solid ${TEAL}44`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: "#2a7d72", marginBottom: 16 }}>ここでの「成し遂げたいこと」「タスク」はチーム全員で共有されます。変更は全員の画面に反映されます。</div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff", border: `1px solid ${SBORD}`, borderRadius: 14, padding: "12px 14px", marginBottom: 20 }}>
+            <div><div style={{ fontSize: 11.5, color: SSUB, fontWeight: 700 }}>あなたの名前</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>{member}</div></div>
+            <button onClick={onChangeName} style={{ ...ghostBtn, padding: "8px 12px" }}>変更</button>
+          </div>
+
+          <div style={{ marginBottom: 12 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Ic n="flag" size={18} /><span style={{ fontSize: 18, fontWeight: 800 }}>成し遂げたいこと</span></div></div>
+          {c.blocks.map((b, i) => (
+            <div key={b.id} style={{ background: SBG, border: `1px solid ${SBORD}`, borderRadius: 14, padding: 12, marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 999, background: INK, color: "#fff", display: "grid", placeItems: "center", fontFamily: NUMF, fontSize: 12, fontWeight: 700, marginTop: 1 }}>{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: INK, lineHeight: 1.5 }}>{CAUSE_LABELS[i] || `成し遂げたいこと ${i + 1}`}</span>
+                <button onClick={() => delBlock(b.id)} style={{ flexShrink: 0, ...iconGhost, color: "#cbb" }}><Ic n="trash" size={15} /></button>
+              </div>
+              <textarea value={b.text} rows={2} placeholder={CAUSE_PLACEHOLDERS[i] || "ここに書く"} onChange={(e) => updBlock(b.id, e.target.value)} onBlur={() => commit(c, g)} style={ta} />
+            </div>
+          ))}
+          <button onClick={addBlock} style={{ width: "100%", padding: 13, border: "1px dashed #d9d0bf", borderRadius: 14, background: "transparent", color: SSUB, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>＋ 追加</button>
+
+          <div style={{ height: 1, background: SBORD, margin: "28px 0 20px" }} />
+          <div style={{ marginBottom: 14 }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><Ic n="list" size={18} /><span style={{ fontSize: 18, fontWeight: 800 }}>日々のタスク</span></div></div>
+          {g.map((grp) => (
+            <div key={grp.id} style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <input value={grp.name} placeholder="カテゴリ名" onChange={(e) => updGroup(grp.id, e.target.value)} onBlur={() => commit(c, g)} style={{ fontSize: 13, fontWeight: 800, color: SSUB, border: "none", background: "transparent", outline: "none", flex: 1, fontFamily: FONT }} />
+                <button onClick={() => delGroup(grp.id)} style={{ border: "none", background: "transparent", color: "#cbb", cursor: "pointer", fontSize: 12, fontFamily: FONT }}>カテゴリ削除</button>
+              </div>
+              <div style={{ background: SBG, border: `1px solid ${SBORD}`, borderRadius: 16, padding: "8px 12px" }}>
+                {grp.items.map((it, i) => (
+                  <div key={it.id} style={{ padding: "12px 0", borderBottom: i === grp.items.length - 1 ? "none" : `1px solid ${SBORD}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
+                      <span onClick={() => setPalFor(palFor === it.id ? null : it.id)} style={{ width: 16, height: 16, borderRadius: 5, background: it.color, cursor: "pointer", flexShrink: 0 }} />
+                      {palFor === it.id && <Swatches current={it.color} onPick={(p) => { updItem(grp.id, it.id, "color", p); setPalFor(null); }} />}
+                      <input value={it.name} placeholder="タスク名" onChange={(e) => updItem(grp.id, it.id, "name", e.target.value)} onBlur={() => commit(c, g)} style={{ flex: 1, minWidth: 0, fontSize: 15.5, fontWeight: 600, color: INK, border: "none", background: "transparent", outline: "none", fontFamily: FONT }} />
+                      <button onClick={() => delItem(grp.id, it.id)} style={{ ...iconGhost, color: "#d65a3f" }}><Ic n="trash" size={15} /></button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, marginLeft: 26 }}>
+                      <span style={{ fontSize: 11.5, color: SSUB }}>1日の目標(任意)</span>
+                      <input value={it.target || 0} inputMode="numeric" onChange={(e) => updItem(grp.id, it.id, "target", Math.max(0, parseInt(e.target.value.replace(/[^0-9]/g, "") || "0", 10)))} style={{ width: 56, textAlign: "center", border: `1px solid ${SINP}`, borderRadius: 9, padding: "6px 0", fontSize: 14, fontFamily: NUMF, fontWeight: 700, outline: "none", color: INK }} />
+                      <button onClick={() => setWhyFor(whyFor === it.id ? null : it.id)} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, border: "none", background: whyFor === it.id ? CORAL + "1a" : "#f1ece0", color: whyFor === it.id ? CORAL : "#8a857a", borderRadius: 999, padding: "5px 10px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}><Ic n="spark" size={12} />繋がり</button>
+                    </div>
+                    {whyFor === it.id && (<div style={{ marginLeft: 26, marginTop: 8 }}><textarea value={it.why || ""} rows={2} placeholder="このタスクが成し遂げたいことにどう繋がるか" onChange={(e) => updItem(grp.id, it.id, "why", e.target.value)} onBlur={() => commit(c, g)} style={ta} /></div>)}
+                  </div>
+                ))}
+                <button onClick={() => addItem(grp.id)} style={{ width: "100%", padding: "12px 0", border: "none", background: "transparent", color: SSUB, fontSize: 13.5, fontWeight: 700, cursor: "pointer", textAlign: "left", fontFamily: FONT }}>＋ タスクを追加</button>
+              </div>
+            </div>
+          ))}
+          <button onClick={addGroup} style={{ width: "100%", padding: 13, border: "1px dashed #d9d0bf", borderRadius: 14, background: "transparent", color: SSUB, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>＋ カテゴリを追加</button>
+          <div style={{ height: 16 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabBar({ tab, setTab }) {
+  const items = [{ id: "today", label: "今日", icon: "pencil" }, { id: "team", label: "チーム", icon: "users" }, { id: "trend", label: "推移", icon: "trend" }, { id: "history", label: "履歴", icon: "list" }];
+  return (
+    <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #eee5d4", boxShadow: "0 -4px 20px #0000000a" }}>
+      <div style={{ maxWidth: 620, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+        {items.map((it) => { const active = tab === it.id; return (<button key={it.id} onClick={() => setTab(it.id)} style={{ padding: "11px 0 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: active ? CORAL : "#a8a89e" }}><Ic n={it.icon} size={20} sw={active ? 2.4 : 2} /><span style={{ fontSize: 11, fontWeight: active ? 700 : 500 }}>{it.label}</span></button>); })}
+      </div>
+    </nav>
+  );
+}
+
+const Card = ({ children, pad = 16 }) => <div style={{ background: "#fff", border: "1px solid #efe8d8", borderRadius: 18, padding: pad, marginBottom: 14, boxShadow: "0 1px 2px #0000000a" }}>{children}</div>;
+const CardTitle = ({ children, icon }) => <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14, marginBottom: 4, color: INK }}>{icon}{children}</div>;
+function SectionCard({ title, right, icon, children }) { return <Card><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}><div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 14 }}>{icon}{title}</div>{right}</div>{children}</Card>; }
+const Legend = ({ color, text }) => <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "#7a7a70" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: color }} />{text}</span>;
+const Empty = ({ text }) => <div style={{ padding: "26px 0", textAlign: "center", color: "#a0a096", fontSize: 13 }}>{text}</div>;
+const RoundBtn = ({ children, onClick, disabled, accent }) => <button onClick={onClick} disabled={disabled} style={{ width: 32, height: 32, borderRadius: 10, border: "none", cursor: disabled ? "default" : "pointer", display: "grid", placeItems: "center", background: disabled ? "#f0ece1" : accent ? CORAL : "#f1ece0", color: disabled ? "#c8c4b8" : accent ? "#fff" : INK, opacity: disabled ? .6 : 1 }}>{children}</button>;
+const IconBtn = ({ children, onClick, disabled }) => <button onClick={onClick} disabled={disabled} style={{ width: 40, height: 40, borderRadius: 12, border: "1px solid #ece5d4", background: "#fff", cursor: disabled ? "default" : "pointer", display: "grid", placeItems: "center", color: disabled ? "#cdcabd" : INK }}>{children}</button>;
+const iconGhost = { width: 30, height: 30, borderRadius: 9, border: "none", background: "transparent", cursor: "pointer", display: "grid", placeItems: "center", color: "#9a9a90" };
+const addBtn = { marginTop: 6, width: "100%", padding: "10px", borderRadius: 12, border: "1.5px dashed #d8d2c2", background: "transparent", color: "#8a8a80", fontWeight: 600, fontSize: 13.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: FONT };
+const primaryBtn = { padding: "11px 14px", borderRadius: 12, border: "none", background: CORAL, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: FONT };
+const ghostBtn = { padding: "11px 14px", borderRadius: 12, border: "1px solid #e6e0d0", background: "#fff", color: INK, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: FONT };
+const textInput = { width: "100%", border: "none", background: "transparent", outline: "none", fontSize: 14.5, fontFamily: FONT, padding: "2px 0" };
+const linkBtn = { border: "none", background: "transparent", color: "#a0a096", fontSize: 11, cursor: "pointer", textDecoration: "underline", fontFamily: FONT };
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
